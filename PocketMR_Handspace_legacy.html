@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#080b18">
+<title>PocketMR — Hand Interface</title>
+<style>
+:root{--cyan:#57f4ff;--violet:#a879ff;--bg:#080b18;--panel:rgba(15,22,43,.86);--line:rgba(87,244,255,.48)}
+*{box-sizing:border-box} html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:#eff8ff;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+#camera{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1);opacity:.72}
+#shade{position:fixed;inset:0;background:linear-gradient(180deg,rgba(4,7,20,.65),transparent 30%,rgba(4,7,20,.45));pointer-events:none}
+#overlay{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+header{position:fixed;top:env(safe-area-inset-top,12px);left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;z-index:4;gap:8px}
+.brand{font-weight:800;letter-spacing:.12em;font-size:13px}.brand span{color:var(--cyan)}
+.pill{font-size:11px;border:1px solid #3c4968;background:#0b1226d9;padding:7px 10px;border-radius:99px;color:#b8c9e8}
+#status{color:var(--cyan)}
+.panel{position:absolute;z-index:2;width:min(78vw,310px);border:1px solid var(--line);border-radius:18px;background:var(--panel);backdrop-filter:blur(16px);box-shadow:0 0 28px #35eaff17, inset 0 0 24px #8b64ff0c;padding:15px;touch-action:none}
+#mainPanel{left:7%;top:23%} #toolsPanel{right:5%;bottom:15%;width:min(57vw,220px)}
+.panel h2{font-size:14px;margin:0 0 4px;letter-spacing:.04em}.sub{font-size:11px;color:#a9b9da;margin-bottom:13px}
+.windowbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);display:inline-block;box-shadow:0 0 9px var(--cyan);margin-right:5px}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{border:1px solid #364664;background:#111a32;border-radius:12px;padding:12px 8px;text-align:center;font-size:11px;color:#e6f4ff;min-height:68px}
+.tile .emoji{font-size:22px;display:block;margin-bottom:5px}
+.tile.active{border-color:var(--cyan);background:#123443;box-shadow:0 0 18px #57f4ff21}
+.big{font-size:25px;font-weight:750;color:var(--cyan);margin:3px 0}
+.meter{height:5px;background:#26304a;border-radius:9px;overflow:hidden;margin:8px 0}.meter i{display:block;height:100%;width:72%;background:linear-gradient(90deg,var(--cyan),var(--violet))}
+#hint{position:fixed;left:12px;right:12px;bottom:env(safe-area-inset-bottom,12px);z-index:4;text-align:center;font-size:11px;color:#c7d5ef;background:#0b1124d9;border:1px solid #2d3c5c;border-radius:14px;padding:11px 12px}
+button{font:inherit;color:#07111c;background:linear-gradient(100deg,var(--cyan),#b5a1ff);border:0;border-radius:12px;padding:12px 14px;font-weight:750;width:100%;margin-top:10px}
+#startScreen{position:fixed;inset:0;z-index:10;display:grid;place-items:center;padding:24px;background:radial-gradient(ellipse at 50% 35%,#20234a,#080b18 70%)}
+.startcard{max-width:390px;width:100%;border:1px solid #3b4d76;border-radius:24px;padding:24px;background:#0c1225ed;box-shadow:0 20px 80px #0008}
+.logo{font-size:30px;font-weight:850;letter-spacing:-.05em}.logo b{color:var(--cyan)}.startcard p{font-size:13px;color:#b9c7e5;line-height:1.55}.startcard ul{padding-left:19px;color:#dce7ff;font-size:12px;line-height:1.8}
+.small{font-size:10px;color:#8e9fbe;margin-top:10px;line-height:1.5}
+#toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:6;background:#101b32;border:1px solid var(--cyan);padding:8px 13px;border-radius:99px;font-size:12px;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap}
+@media(max-width:390px){#toolsPanel{bottom:14%;padding:11px}#mainPanel{top:22%;padding:12px}.tile{min-height:58px;padding:8px 5px}#hint{font-size:10px}}
+</style>
+</head>
+<body>
+<video id="camera" autoplay muted playsinline></video><div id="shade"></div><canvas id="overlay"></canvas>
+<header><div class="brand">POCKET<span>MR</span> <span style="color:#8795b7;font-weight:500">/ HANDSPACE</span></div><div class="pill" id="status">CAMERA OFF</div></header>
+<section class="panel" id="mainPanel">
+ <div class="windowbar"><span class="pill"><i class="dot"></i>SPATIAL DESKTOP</span><span style="color:#8795b7;font-size:11px">⋯</span></div>
+ <h2>Welcome to Handspace</h2><div class="sub">Pinch and drag this window to reposition it</div>
+ <div class="tiles">
+  <div class="tile" data-action="Browser"><span class="emoji">🌐</span>Browser</div>
+  <div class="tile" data-action="Gallery"><span class="emoji">▧</span>Gallery</div>
+  <div class="tile" data-action="Music"><span class="emoji">♫</span>Music</div>
+  <div class="tile" data-action="Settings"><span class="emoji">⚙</span>Settings</div>
+ </div>
+</section>
+<section class="panel" id="toolsPanel">
+ <div class="windowbar"><span class="pill">TRACKING</span><span style="font-size:10px;color:#91a2c3">LIVE</span></div>
+ <h2>Hand telemetry</h2><div class="sub" id="gesture">Waiting for a hand…</div>
+ <div class="big" id="confidence">—</div><div class="sub">Gesture confidence / visual demo</div>
+ <div class="meter"><i id="meter"></i></div>
+ <div class="sub" id="lastAction">Last action: none</div>
+ <button id="resetBtn">Reset panels</button>
+</section>
+<div id="hint">Point to a tile · Pinch thumb + index to click · Hold pinch to drag a panel</div>
+<div id="toast"></div>
+<div id="startScreen"><div class="startcard">
+ <div class="logo">Pocket<b>MR</b></div><div class="sub">CAMERA-BASED MIXED REALITY • PROTOTYPE 0.1</div>
+ <p>Turn your phone into a gesture-controlled spatial interface. Your camera tracks your hand and overlays interactive digital panels on the live view.</p>
+ <ul><li>Point with your index finger</li><li>Pinch thumb and index finger to select</li><li>Keep pinched and move to drag a window</li></ul>
+ <button id="startBtn">Enable camera & hand tracking</button>
+ <div class="small">Camera permission is required. Best results: bright room, hand visible from wrist to fingertips. This prototype processes the camera feed in your browser using MediaPipe.</div>
+ </div></div>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+<script>
+const video=document.getElementById('camera'), canvas=document.getElementById('overlay'), ctx=canvas.getContext('2d');
+const statusEl=document.getElementById('status'), gestureEl=document.getElementById('gesture'), confidenceEl=document.getElementById('confidence'), meter=document.getElementById('meter'), lastAction=document.getElementById('lastAction'), toastEl=document.getElementById('toast');
+let handsModel=null,camera=null, pinchWas=false, dragTarget=null, dragOffset={x:0,y:0}, lastPinchTime=0, lastHover='', started=false;
+const panels=[document.getElementById('mainPanel'),document.getElementById('toolsPanel')];
+function toast(s){toastEl.textContent=s;toastEl.style.opacity=1;clearTimeout(toast._t);toast._t=setTimeout(()=>toastEl.style.opacity=0,1200)}
+function resize(){canvas.width=innerWidth*devicePixelRatio;canvas.height=innerHeight*devicePixelRatio;canvas.style.width=innerWidth+'px';canvas.style.height=innerHeight+'px';ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0)}
+addEventListener('resize',resize);resize();
+function dist(a,b){return Math.hypot(a.x-b.x,a.y-b.y)}
+function panelAt(x,y){for(const p of panels){const r=p.getBoundingClientRect();if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom)return p}return null}
+function handleResults(results){
+ ctx.clearRect(0,0,innerWidth,innerHeight);
+ const all=results.multiHandLandmarks;
+ if(!all||!all.length){statusEl.textContent='LOOKING FOR HAND';gestureEl.textContent='Show one hand to the camera';confidenceEl.textContent='—';meter.style.width='0%';pinchWas=false;dragTarget=null;return}
+ const lm=all[0], index=lm[8], thumb=lm[4], wrist=lm[0];
+ const x=(1-index.x)*innerWidth, y=index.y*innerHeight, tx=(1-thumb.x)*innerWidth, ty=thumb.y*innerHeight;
+ const pinch=dist(index,thumb)<.055;
+ statusEl.textContent='HAND DETECTED';statusEl.style.color='var(--cyan)';
+ confidenceEl.textContent=Math.round(Math.max(0,1-dist(index,thumb)/.18)*100)+'%';meter.style.width=confidenceEl.textContent;
+ gestureEl.textContent=pinch?'Pinch detected': 'Pointing / hovering';
+ // Draw finger cursor and pinch link
+ ctx.lineWidth=2;ctx.strokeStyle=pinch?'#a879ff':'#57f4ff';ctx.shadowBlur=14;ctx.shadowColor=ctx.strokeStyle;
+ ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(tx,ty);ctx.stroke();
+ ctx.beginPath();ctx.arc(x,y,pinch?14:9,0,Math.PI*2);ctx.stroke();
+ ctx.beginPath();ctx.arc(tx,ty,5,0,Math.PI*2);ctx.stroke();ctx.shadowBlur=0;
+ const hovered=panelAt(x,y);
+ if(hovered){hovered.style.borderColor=pinch?'#a879ff':'#57f4ff';}
+ panels.forEach(p=>{if(p!==hovered)p.style.borderColor='rgba(87,244,255,.48)'});
+ if(pinch&&!pinchWas){
+   lastPinchTime=Date.now();
+   if(hovered){dragTarget=hovered;const r=hovered.getBoundingClientRect();dragOffset={x:x-r.left,y:y-r.top};}
+   const tile=document.elementFromPoint(x,y)?.closest?.('.tile');
+   if(tile){tile.classList.add('active');lastAction.textContent='Last action: '+tile.dataset.action+' opened';toast(tile.dataset.action+' selected');setTimeout(()=>tile.classList.remove('active'),700);dragTarget=null;}
+ } else if(pinch&&pinchWas&&dragTarget){
+   dragTarget.style.left='auto';dragTarget.style.right='auto';dragTarget.style.bottom='auto';
+   dragTarget.style.position='fixed';dragTarget.style.left=Math.max(4,Math.min(innerWidth-dragTarget.offsetWidth-4,x-dragOffset.x))+'px';
+   dragTarget.style.top=Math.max(60,Math.min(innerHeight-dragTarget.offsetHeight-65,y-dragOffset.y))+'px';
+ } else if(!pinch&&pinchWas){dragTarget=null;}
+ pinchWas=pinch;
+}
+document.getElementById('startBtn').addEventListener('click',async()=>{
+ try{
+  document.getElementById('startBtn').textContent='Starting camera…';
+  const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user',width:{ideal:1280},height:{ideal:720}},audio:false});
+  video.srcObject=stream;await video.play();
+  if(!window.Hands||!window.Camera)throw new Error('Hand tracking library did not load. Check your internet connection and reload.');
+  handsModel=new Hands({locateFile:(file)=>`https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`});
+  handsModel.setOptions({maxNumHands:1,modelComplexity:1,minDetectionConfidence:.6,minTrackingConfidence:.55});
+  handsModel.onResults(handleResults);
+  camera=new Camera(video,{onFrame:async()=>{if(handsModel)await handsModel.send({image:video})},width:1280,height:720});
+  await camera.start();started=true;document.getElementById('startScreen').style.display='none';statusEl.textContent='TRACKING STARTED';toast('Show your hand to begin');
+ }catch(e){alert('Could not start PocketMR: '+e.message+'\n\nOpen this page in a browser that supports camera access, allow camera permission, and make sure you are online.');document.getElementById('startBtn').textContent='Try again';}
+});
+document.getElementById('resetBtn').addEventListener('click',()=>{document.getElementById('mainPanel').style.left='7%';document.getElementById('mainPanel').style.top='23%';document.getElementById('mainPanel').style.right='auto';document.getElementById('mainPanel').style.bottom='auto';document.getElementById('toolsPanel').style.left='auto';document.getElementById('toolsPanel').style.top='auto';document.getElementById('toolsPanel').style.right='5%';document.getElementById('toolsPanel').style.bottom='15%';toast('Panels reset')});
+</script>
+</body></html>
